@@ -11,12 +11,15 @@ router.get('/contribuyentes/:cuit', function(req, res, next) {
   Contribuyente.find({
     cuit: req.params.cuit
   }, function(err, contribuyentes) {
-    if (err) return next(err); + res.json(contribuyentes);
+    if (err) return next(err);
+    res.json(contribuyentes);
   }).limit(1);
 });
 
 router.get('/contribuyentes', function(req, res, next) {
   Contribuyente.find({}, function(err, contribuyentes) {
-    if (err) return next(err); + res.json(contribuyentes);
+    if (err) return next(err);
+    // res.json(contribuyentes);
+    res.send(contribuyentes);
   }).limit(500);
 });
