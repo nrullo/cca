@@ -6,7 +6,7 @@ var express = require('express'),
   mongoose = require('mongoose'),
   glob = require('glob'),
   co = require('co'),
-  LineReader = require('line-by-line-promise'),
+  LineByLineReader = require('line-by-line'),
   MongoClient = require('mongodb').MongoClient,
   assert = require('assert'),
   fs = require('fs'),
@@ -32,55 +32,50 @@ require('./config/express')(app, config);
 app.listen(config.port, function() {
   console.log('Express server listening on port ' + config.port);
 
-  removeFilesJob();
-  startJob();
+  removeFilesJob.start();
+  startJob.start();
 });
 
-var removeFilesJob = function() {
-  var job = new CronJob({
-    // cronTime: '0 31,51,11 * * * *',
-    // cronTime: '27 * * * * *',
-    cronTime: '0 55 * * * *',
-    // cronTime: '0 46,01,16,31 * * * *',
-    // cronTime: '0 16 * * * *',
-    onTick: function() {
-      console.log('Executing touch job... ' + moment().format('YYYYMMDDhhmmss'));
+var removeFilesJob = new CronJob({
+  // cronTime: '0 31,51,11 * * * *',
+  // cronTime: '20 * * * * *',
+  // cronTime: '20,50 * * * * *',
+  cronTime: '0 15,35,55 * * * *',
+  // cronTime: '0 55 * * * *',
+  // cronTime: '0 46,01,16,31 * * * *',
+  // cronTime: '0 16 * * * *',
+  onTick: function() {
+    console.log('Executing removeFilesJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
-      del.sync(['/home/usuario/prj/consultasCuitAFIP/cca/downloads/*']);
-    },
-    onComplete: function() {
-      console.log('Job touch finished...' + moment().format('YYYYMMDDhhmmss'));
-    }
-  });
+    del.sync(['/home/usuario/prj/consultasCuitAFIP/cca/downloads/*']);
+  },
+  onComplete: function() {
+    console.log('Job removeFilesJob finished...' + moment().format('YYYYMMDDhhmmss'));
+  }
+});
 
-  job.start();
-}
+var startJob = new CronJob({
+  // cronTime: '0 31,51,11 * * * *',
+  // cronTime: '30 * * * * *',
+  // cronTime: '0,30 * * * * *',
+  cronTime: '0 0,20,40 * * * *',
+  // cronTime: '0 0 * * * *',
+  // cronTime: '0 46,01,16,31 * * * *',
+  // cronTime: '0 16 * * * *',
+  onTick: function() {
+    console.log('Executing startJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
-var startJob = function() {
-  var job = new CronJob({
-    // cronTime: '0 31,51,11 * * * *',
-    // cronTime: '30 * * * * *',
-    cronTime: '0 0 * * * *',
-    // cronTime: '0 46,01,16,31 * * * *',
-    // cronTime: '0 16 * * * *',
-    onTick: function() {
-      console.log('Executing job... ' + moment().format('YYYYMMDDhhmmss'));
-      downloadAndSaveData();
-    },
-    onComplete: function() {
-        console.log('Job finished...' + moment().format('YYYYMMDDhhmmss'));
-      }
-      /*,
-          start: true*/
-  });
-
-  job.start();
-}
+    downloadAndSaveData();
+  },
+  onComplete: function() {
+    console.log('Job startJob finished...' + moment().format('YYYYMMDDhhmmss'));
+  }
+});
 
 var downloadAndSaveData = function() {
   var file_uri = 'http://www.afip.gob.ar/genericos/cInscripcion/archivos/SINapellidoNombreDenominacion.zip';
-  // var file_uri = 'http://localhost:3000/padr.zip';
   // var file_uri = 'http://localhost:3000/SINapellidoNombreDenominacion.zip';
+  // var file_uri = 'http://localhost:3000/padr.zip';
 
   console.log('Downloading and decompressing AFIP zip file: ' + file_uri);
   var download = new Download({
@@ -90,34 +85,37 @@ var downloadAndSaveData = function() {
   var hoy = moment();
   // var anterior = moment(hoy).substract(1, 'days');
   // var anterior = moment(hoy).subtract(1, 'minutes');
-  var anterior = moment(hoy).subtract(15, 'minutes');
+  // var anterior = moment(hoy).subtract(30, 'seconds');
   // var anterior = moment(hoy).subtract(15, 'minutes');
+  var anterior = moment(hoy).subtract(20, 'minutes');
   download
     .get(file_uri)
     .dest('downloads')
-    .rename('afip_contr_' + hoy.format('YYYYMMDDhhmm'))
+    .rename('afip_contr_' + hoy.format('YYYYMMDDhhmmss'))
     .run(function(err, files) {
-      console.log("files.length: " + files.length);
-      for (var i in files) {
-        console.log("files[" + i + "].path: " + files[i].path);
-      }
       // if (err || files.length !== 1) {
       if (err) {
+        console.error('Failed to download zip file...');
         throw err;
       }
       console.log('Zip file downloaded and decompressed: ' + files[0].path);
 
-      var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmm');
+      // console.log('files.length: ' + files.length);
+      // for (var i in files) {
+      //   console.log('files[' + i + '].path: ' + files[i].path);
+      // }
+
+      // var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmm');
+      var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmmss');
       if (fileExists(filepathAnterior)) {
-        console.log("Already exists a previous file, comparing...");
+        console.log('Already exists a previous file, comparing...');
 
         var modifiedTime = function(fileName, cb) {
           return fs.statSync(fileName).mtime;
         };
         var diff = fsCompareSync(modifiedTime, filepathAnterior, files[0].path);
-
         if (diff === 0) {
-          console.log("Same files... ending...");
+          console.log('Same files... ending...');
           return;
         }
       }
@@ -126,55 +124,69 @@ var downloadAndSaveData = function() {
 }
 
 var saveData = function(filepath) {
-  var file = new LineReader(filepath);
-
   console.log('Connecting to mongodb server...');
   MongoClient.connect(mongodb_uri, function(err, db) {
     assert.equal(null, err);
+    assert.ok(db != null);
+    if (err) throw err;
     console.log('Connected correctly to mongodb server');
 
-    console.log('Truncating collection...');
     var contribuyentes = db.collection('contribuyentes');
-    contribuyentes.remove({});
+    console.log('Removing documents...');
+    contribuyentes.remove({}, function(err) {
+      if (err) throw err;
+      console.log('Documentes removed...');
 
-    co(function*() {
-      var line;
-      console.log('Reading file and saving data...');
-      while ((line = yield file.readLine()) !== null) {
-        // console.log(line);
-        saveContribuyente(line, db, function() {});
+      console.log('Reading file line by line: ' + filepath);
+      var lr = new LineByLineReader(filepath);
+
+      lr.on('error', function(err) {
+        console.log('Error when trying to read file line by line...');
+      });
+
+      lr.on('line', function(line) {
+        var o = parseLineToObject(line);
+        if (o !== null) {
+          saveContribuyente(o);
+        }
+      });
+
+      lr.on('end', function() {
+        console.log('All lines are readed...');
+        console.log('Closing mongo connection...');
+        db.close();
+      });
+
+      function parseLineToObject(line) {
+        var rval = null;
+        if (line !== null && line !== '' && line.length > 0) {
+          rval = {
+            cuit: line.slice(0, 11),
+            impGanancias: line.slice(11, 13),
+            impIva: line.slice(13, 15),
+            monotributo: line.slice(15, 17),
+            integranteSoc: line.slice(17, 18),
+            empleador: line.slice(18, 19),
+            actMonotributo: line.slice(19, 21)
+          };
+        }
+        return rval;
       }
-      console.log('Data saved...');
-      console.log('Closing mongo connection...');
-      // db.close();
+
+      function saveContribuyente(c) {
+        contribuyentes.insert(c, function(err, result) {
+          assert.equal(err, null);
+          console.log('Contribuyente saved...');
+        });
+      }
+
     });
   });
 }
 
-var saveContribuyente = function(line, db, callback) {
-  if (line !== null && line !== "" && line.length > 0) {
-    var contribuyentes = db.collection('contribuyentes');
-    var vcuit = line.slice(0, 11);
-    contribuyentes.insert({
-      cuit: vcuit,
-      impGanancias: line.slice(11, 13),
-      impIva: line.slice(13, 15),
-      monotributo: line.slice(15, 17),
-      integranteSoc: line.slice(17, 18),
-      empleador: line.slice(18, 19),
-      actMonotributo: line.slice(19, 21)
-    }, function(err, result) {
-      assert.equal(err, null);
-      // console.log('Contribuyente saved...');
-      callback(result);
-    });
-  }
-}
-
-var fileExists = function fileExists(filepath) {
-  console.log("fileExists executed: " + filepath)
+function fileExists(filePath) {
   try {
-    return fs.statSync(filepath).isFile();
+    return fs.statSync(filePath).isFile();
   } catch (err) {
     return false;
   }
