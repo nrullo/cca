@@ -10,7 +10,8 @@ var ContribuyenteSchema = new Schema({
   monotributo: String,
   integranteSoc: String,
   empleador: String,
-  actMonotributo: String
+  actMonotributo: String,
+  fileDate: String
 });
 
 ContribuyenteSchema.virtual('date')
@@ -18,6 +19,4 @@ ContribuyenteSchema.virtual('date')
     return this._id.getTimestamp();
   });
 
-var ContribuyenteModel = mongoose.model('Contribuyente', ContribuyenteSchema);
-
-module.exports = ContribuyenteModel;
+mongoose.model('Contribuyente', ContribuyenteSchema);
