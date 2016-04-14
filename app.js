@@ -50,7 +50,8 @@ app.listen(config.port, function() {
 
 var removeFilesJob = new CronJob({
   // cronTime: '0 31,51,11 * * * *',
-  cronTime: '20 * * * * *',
+  // cronTime: '20 * * * * *',
+  cronTime: '30 8,18,28,38,48,58 * * * *',
   // cronTime: '20,50 * * * * *',
   // cronTime: '0 15,35,55 * * * *',
   // cronTime: '0 55 * * * *',
@@ -68,7 +69,8 @@ var removeFilesJob = new CronJob({
 
 var startJob = new CronJob({
   // cronTime: '0 31,51,11 * * * *',
-  cronTime: '30 * * * * *',
+  // cronTime: '30 * * * * *',
+  cronTime: '30 0,10,20,30,40,50 * * * *',
   // cronTime: '0,30 * * * * *',
   // cronTime: '0 0,20,40 * * * *',
   // cronTime: '0 0 * * * *',
@@ -88,7 +90,9 @@ var downloadAndSaveData = function() {
   // var file_uri = 'http://www.afip.gob.ar/genericos/cInscripcion/archivos/SINapellidoNombreDenominacion.zip';
   // var file_uri = 'http://localhost:3000/SINapellidoNombreDenominacion.zip';
   // var file_uri = 'http://localhost:3000/padr.zip';
-  var file_uri = 'http://localhost:3000/xaa10mil.zip';
+  // var file_uri = 'http://localhost:3000/xaa10mil.zip';
+  // var file_uri = 'http://localhost:3000/xaa100mil.zip';
+  var file_uri = 'http://localhost:3000/xaa1millon.zip';
 
   console.log('Downloading and decompressing AFIP zip file: ' + file_uri);
   var download = new Download({
@@ -97,7 +101,7 @@ var downloadAndSaveData = function() {
   });
   var hoy = moment();
   // var anterior = moment(hoy).substract(1, 'days');
-  var anterior = moment(hoy).subtract(1, 'minutes');
+  var anterior = moment(hoy).subtract(10, 'minutes');
   // var anterior = moment(hoy).subtract(30, 'seconds');
   // var anterior = moment(hoy).subtract(15, 'minutes');
   // var anterior = moment(hoy).subtract(20, 'minutes');
