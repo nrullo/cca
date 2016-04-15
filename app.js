@@ -12,15 +12,17 @@ var express = require('express'),
   assert = require('assert'),
   fs = require('fs'),
   fsCompareSync = require('fs-compare').sync,
-  del = require('delete');
+  del = require('delete'),
+  nodemailer = require('nodemailer'),
+  PropertiesReader = require('properties-reader');
 
 var db;
-
-var mongodb_uri = 'mongodb://localhost/cca-development';
+var properties = PropertiesReader('./config/production.properties');
 
 mongoose.connect(config.db);
 var db = mongoose.connection;
 db.on('error', function() {
+  enviarMail('[CCA] Error conexión mongodb', 'Hubo un error al conectarse a la base de datos');
   throw new Error('unable to connect to database at ' + config.db);
 });
 
@@ -35,17 +37,26 @@ require('./config/express')(app, config);
 app.listen(config.port, function() {
   console.log('Express server listening on port ' + config.port);
 
+  // console.log('Reading config params file...');
+  // properties.parse(config_params_file, config_options, function(error, config_obj) {
+  //   console.log('Config read...');
+
   console.log('Connecting to mongodb server...');
-  MongoClient.connect(mongodb_uri, function(err, database) {
+  MongoClient.connect(config.db, function(err, database) {
     assert.equal(null, err);
     assert.ok(database != null);
-    if (err) throw err;
+    if (err) {
+      enviarMail('[CCA] Error conexión mongodb', 'Hubo un error al conectarse a la base de datos');
+      throw err;
+    }
     console.log('Connected correctly to mongodb server');
     db = database;
 
     removeFilesJob.start();
     startJob.start();
   });
+
+  // });
 });
 
 var removeFilesJob = new CronJob({
@@ -54,9 +65,9 @@ var removeFilesJob = new CronJob({
   // cronTime: '30 8,18,28,38,48,58 * * * *',
   // cronTime: '20,50 * * * * *',
   // cronTime: '0 15,35,55 * * * *',
-  cronTime: '0 55 * * * *',
+  // cronTime: '5 * * * * *',
   // cronTime: '0 46,01,16,31 * * * *',
-  // cronTime: '0 16 * * * *',
+  cronTime: '0 0 * * * *',
   onTick: function() {
     console.log('Executing removeFilesJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
@@ -73,7 +84,8 @@ var startJob = new CronJob({
   // cronTime: '30 0,10,20,30,40,50 * * * *',
   // cronTime: '0,30 * * * * *',
   // cronTime: '0 0,20,40 * * * *',
-  cronTime: '0 0 * * * *',
+  // cronTime: '0 0 * * * *',
+  cronTime: properties.get('cron.rule'),
   // cronTime: '0 46,01,16,31 * * * *',
   // cronTime: '0 16 * * * *',
   onTick: function() {
@@ -87,14 +99,20 @@ var startJob = new CronJob({
 });
 
 var downloadAndSaveData = function() {
-  var file_uri = 'http://www.afip.gob.ar/genericos/cInscripcion/archivos/SINapellidoNombreDenominacion.zip';
+
+  // console.log('Reading config params file...');
+  // properties.parse(config_params_file, config_options, function(error, config_obj) {
+  //   console.log('Config read...');
+
+  // var file_uri = 'http://www.afip.gob.ar/genericos/cInscripcion/archivos/SINapellidoNombreDenominacion.zip';
   // var file_uri = 'http://localhost:3000/SINapellidoNombreDenominacion.zip';
   // var file_uri = 'http://localhost:3000/padr.zip';
   // var file_uri = 'http://localhost:3000/xaa10mil.zip';
   // var file_uri = 'http://localhost:3000/xaa100mil.zip';
   // var file_uri = 'http://localhost:3000/xaa1millon.zip';
+  // var file_uri
 
-  console.log('Downloading and decompressing AFIP zip file: ' + file_uri);
+  console.log('Downloading and decompressing AFIP zip file: ' + properties.get('afip.uri'));
   var download = new Download({
     mode: '755',
     extract: true
@@ -102,17 +120,18 @@ var downloadAndSaveData = function() {
   var hoy = moment();
   // var anterior = moment(hoy).subtract(1, 'days');
   var anterior = moment(hoy).subtract(1, 'hours');
-  // var anterior = moment(hoy).subtract(10, 'minutes');
+  // var anterior = moment(hoy).subtract(1, 'minutes');
   // var anterior = moment(hoy).subtract(30, 'seconds');
   // var anterior = moment(hoy).subtract(15, 'minutes');
   // var anterior = moment(hoy).subtract(20, 'minutes');
   download
-    .get(file_uri)
+    .get(properties.get('afip.uri'))
     .dest('downloads')
     .rename('afip_contr_' + hoy.format('YYYYMMDDhhmmss'))
     .run(function(err, files) {
       // if (err || files.length !== 1) {
       if (err) {
+        enviarMail('[CCA] Failed to download zip file...', 'Failed to download zip file...');
         console.error('Failed to download zip file...');
         throw err;
       }
@@ -139,6 +158,7 @@ var downloadAndSaveData = function() {
       }
       saveData(files[0].path);
     });
+  // });
 }
 
 var saveData = function(filepath) {
@@ -212,4 +232,35 @@ function fileExists(filePath) {
   } catch (err) {
     return false;
   }
+}
+
+function enviarMail(subject, body) {
+  console.log('enviarMail executed...');
+  var options = {
+    host: properties.get('smtp.host'),
+    port: properties.get('smtp.port'),
+    secure: true,
+    auth: {
+      user: properties.get('smtp.user'),
+      pass: properties.get('smtp.passwd')
+    }
+  };
+  var transporter = nodemailer.createTransport(options);
+
+  // setup e-mail data with unicode symbols
+  var mailOptions = {
+    from: properties.get('smtp.mail_from'), // sender address
+    to: properties.get('smtp.mail_to'), // list of receivers
+    subject: subject, // Subject line
+    text: body
+  };
+
+  // send mail with defined transport object
+  console.log('Executing transporter...');
+  transporter.sendMail(mailOptions, function(error, info) {
+    if (error) {
+      return console.log(error);
+    }
+    console.log('Message sent: ' + info.response);
+  });
 }
