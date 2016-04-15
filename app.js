@@ -100,8 +100,8 @@ var downloadAndSaveData = function() {
     extract: true
   });
   var hoy = moment();
-  // var anterior = moment(hoy).substract(1, 'days');
-  var anterior = moment(hoy).substract(1, 'hours');
+  // var anterior = moment(hoy).subtract(1, 'days');
+  var anterior = moment(hoy).subtract(1, 'hours');
   // var anterior = moment(hoy).subtract(10, 'minutes');
   // var anterior = moment(hoy).subtract(30, 'seconds');
   // var anterior = moment(hoy).subtract(15, 'minutes');
