@@ -6,10 +6,8 @@ var express = require('express'),
   mongoose = require('mongoose'),
   glob = require('glob'),
   co = require('co'),
-  LineByLineReader = require('line-by-line'),
   LineReader = require('line-by-line-promise'),
   MongoClient = require('mongodb').MongoClient,
-  assert = require('assert'),
   fs = require('fs'),
   fsCompareSync = require('fs-compare').sync,
   del = require('delete'),
@@ -37,37 +35,30 @@ require('./config/express')(app, config);
 app.listen(config.port, function() {
   console.log('Express server listening on port ' + config.port);
 
-  // console.log('Reading config params file...');
-  // properties.parse(config_params_file, config_options, function(error, config_obj) {
-  //   console.log('Config read...');
-
   console.log('Connecting to mongodb server...');
   MongoClient.connect(config.db, function(err, database) {
-    assert.equal(null, err);
-    assert.ok(database != null);
     if (err) {
       enviarMail('[CCA] Error conexión mongodb', 'Hubo un error al conectarse a la base de datos');
+      console.error('Failed mongodb connection');
       throw err;
     }
     console.log('Connected correctly to mongodb server');
     db = database;
 
-    removeFilesJob.start();
+    // removeFilesJob.start();
     startJob.start();
   });
-
-  // });
 });
 
 var removeFilesJob = new CronJob({
   // cronTime: '0 31,51,11 * * * *',
-  // cronTime: '20 * * * * *',
+  cronTime: '20 * * * * *',
   // cronTime: '30 8,18,28,38,48,58 * * * *',
   // cronTime: '20,50 * * * * *',
   // cronTime: '0 15,35,55 * * * *',
   // cronTime: '5 * * * * *',
   // cronTime: '0 46,01,16,31 * * * *',
-  cronTime: '0 0 * * * *',
+  // cronTime: '0 0 * * * *',
   onTick: function() {
     console.log('Executing removeFilesJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
@@ -85,9 +76,9 @@ var startJob = new CronJob({
   // cronTime: '0,30 * * * * *',
   // cronTime: '0 0,20,40 * * * *',
   // cronTime: '0 0 * * * *',
-  cronTime: properties.get('cron.rule'),
+  // cronTime: properties.get('cron.rule'),
   // cronTime: '0 46,01,16,31 * * * *',
-  // cronTime: '0 16 * * * *',
+  cronTime: '30 12 * * * *',
   onTick: function() {
     console.log('Executing startJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
@@ -99,19 +90,6 @@ var startJob = new CronJob({
 });
 
 var downloadAndSaveData = function() {
-
-  // console.log('Reading config params file...');
-  // properties.parse(config_params_file, config_options, function(error, config_obj) {
-  //   console.log('Config read...');
-
-  // var file_uri = 'http://www.afip.gob.ar/genericos/cInscripcion/archivos/SINapellidoNombreDenominacion.zip';
-  // var file_uri = 'http://localhost:3000/SINapellidoNombreDenominacion.zip';
-  // var file_uri = 'http://localhost:3000/padr.zip';
-  // var file_uri = 'http://localhost:3000/xaa10mil.zip';
-  // var file_uri = 'http://localhost:3000/xaa100mil.zip';
-  // var file_uri = 'http://localhost:3000/xaa1millon.zip';
-  // var file_uri
-
   console.log('Downloading and decompressing AFIP zip file: ' + properties.get('afip.uri'));
   var download = new Download({
     mode: '755',
@@ -137,13 +115,9 @@ var downloadAndSaveData = function() {
       }
       console.log('Zip file downloaded and decompressed: ' + files[0].path);
 
-      // console.log('files.length: ' + files.length);
-      // for (var i in files) {
-      //   console.log('files[' + i + '].path: ' + files[i].path);
-      // }
-
       // var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmm');
       var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmmss');
+      // var filepathAnterior = '';
       if (fileExists(filepathAnterior)) {
         console.log('Already exists a previous file, comparing...');
 
@@ -158,7 +132,6 @@ var downloadAndSaveData = function() {
       }
       saveData(files[0].path);
     });
-  // });
 }
 
 var saveData = function(filepath) {
@@ -166,28 +139,15 @@ var saveData = function(filepath) {
   var contribuyentes = db.collection('contribuyentes');
   console.log('Removing documents...');
   contribuyentes.remove({}, function(err) {
-    if (err) throw err;
+    if (err) {
+      enviarMail('[CCA] Failed to remove mongodb documents...', 'Failed to remove mongodb documents....');
+      console.error('Failed to remove mongodb documents');
+      throw err;
+    }
     console.log('Documentes removed...');
 
     console.log('Reading file line by line: ' + filepath);
-    /*
-    var lr = new LineByLineReader(filepath);
 
-    lr.on('error', function(err) {
-      console.log('Error when trying to read file line by line...');
-    });
-
-    lr.on('line', function(line) {
-      var o = parseLineToObject(line);
-      if (o !== null) {
-        saveContribuyente(o);
-      }
-    });
-
-    lr.on('end', function() {
-      console.log('All lines are readed...');
-    });
-    */
     var file = new LineReader(filepath);
     co(function*() {
       var line;
@@ -204,13 +164,13 @@ var saveData = function(filepath) {
       var rval = null;
       if (line !== null && line !== '' && line.length > 0) {
         rval = {
-          cuit: line.slice(0, 11),
-          impGanancias: line.slice(11, 13),
-          impIva: line.slice(13, 15),
-          monotributo: line.slice(15, 17),
-          integranteSoc: line.slice(17, 18),
-          empleador: line.slice(18, 19),
-          actMonotributo: line.slice(19, 21)
+          cuit: line.slice(0, 11).trim(),
+          /*impGanancias: line.slice(11, 13).trim(),*/
+          impIva: line.slice(13, 15).trim(),
+          monotributo: line.slice(15, 17).trim()/*,
+          integranteSoc: line.slice(17, 18).trim(),
+          empleador: line.slice(18, 19).trim(),
+          actMonotributo: line.slice(19, 21).trim()*/
         };
       }
       return rval;
@@ -218,8 +178,12 @@ var saveData = function(filepath) {
 
     function saveContribuyente(c) {
       contribuyentes.insert(c, function(err, result) {
-        assert.equal(err, null);
-        console.log('Contribuyente saved...');
+        if (err) {
+          enviarMail('[CCA] Falló al insertar un documento...', 'CUIT del contribuyente: ' + c.cuit);
+          console.error('Failed to insert mongodb document');
+          throw err;
+        }
+        // console.log('Contribuyente saved...');
       });
     }
 
@@ -230,6 +194,8 @@ function fileExists(filePath) {
   try {
     return fs.statSync(filePath).isFile();
   } catch (err) {
+    // enviarMail('[CCA] Error al leer archivo previo.', 'No existe el archivo previo. Archivo: ' + filePath);
+    console.error('Failed to read previous file');
     return false;
   }
 }
@@ -259,7 +225,7 @@ function enviarMail(subject, body) {
   console.log('Executing transporter...');
   transporter.sendMail(mailOptions, function(error, info) {
     if (error) {
-      return console.log(error);
+      return console.error(error);
     }
     console.log('Message sent: ' + info.response);
   });
