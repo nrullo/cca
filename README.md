@@ -1,7 +1,13 @@
 # cca
 
 ### Dependencies
-- Install GIT
+
+#### Install GIT
+```bash
+$ sudo apt-get update
+$ sudo apt-get install git
+```
+
 - Install MongoDB: [https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/)
 - Install NodeJS
 - Install PM2:
