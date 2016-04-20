@@ -22,15 +22,15 @@ _tested on v4.1.1_
 
 ### Install PM2:
 ```bash
-$ npm install pm2 -g
+npm install pm2 -g
 ```
 
 ## Clone & run
 ```bash
-$ cd
-$ git clone https://github.com/nrullo/cca.git
-$ cd cca
-$ pm2 start app.js
-$ pm2 startup ubuntu
-$ pm2 save
+cd
+git clone https://github.com/nrullo/cca.git
+cd cca
+pm2 start app.js
+pm2 startup ubuntu
+pm2 save
 ```
