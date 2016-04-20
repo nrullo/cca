@@ -9,7 +9,7 @@
 $ npm install pm2 -g
 ```
 
-### Clone && run
+### Clone & run
 ```bash
 $ cd
 $ git clone https://github.com/nrullo/cca.git
