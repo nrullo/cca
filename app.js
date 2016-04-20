@@ -1,3 +1,5 @@
+/* jshint esversion: 6 */
+
 var express = require('express'),
   config = require('./config/config'),
   moment = require('moment'),
@@ -45,20 +47,17 @@ app.listen(config.port, function() {
     console.log('Connected correctly to mongodb server');
     db = database;
 
-    // removeFilesJob.start();
-    startJob.start();
+    db.createCollection('contribuyentes');
+    db.createCollection('contribuyentes_bak');
+    db.createCollection('contribuyentes_bak2');
+
+    removeFilesJob.start();
+    mainJob.start();
   });
 });
 
 var removeFilesJob = new CronJob({
-  // cronTime: '0 31,51,11 * * * *',
-  cronTime: '20 * * * * *',
-  // cronTime: '30 8,18,28,38,48,58 * * * *',
-  // cronTime: '20,50 * * * * *',
-  // cronTime: '0 15,35,55 * * * *',
-  // cronTime: '5 * * * * *',
-  // cronTime: '0 46,01,16,31 * * * *',
-  // cronTime: '0 0 * * * *',
+  cronTime: properties.get('cron.removeFilesJob'),
   onTick: function() {
     console.log('Executing removeFilesJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
@@ -69,23 +68,15 @@ var removeFilesJob = new CronJob({
   }
 });
 
-var startJob = new CronJob({
-  // cronTime: '0 31,51,11 * * * *',
-  // cronTime: '30 * * * * *',
-  // cronTime: '30 0,10,20,30,40,50 * * * *',
-  // cronTime: '0,30 * * * * *',
-  // cronTime: '0 0,20,40 * * * *',
-  // cronTime: '0 0 * * * *',
-  // cronTime: properties.get('cron.rule'),
-  // cronTime: '0 46,01,16,31 * * * *',
-  cronTime: '30 12 * * * *',
+var mainJob = new CronJob({
+  cronTime: properties.get('cron.mainJob'),
   onTick: function() {
-    console.log('Executing startJob job... ' + moment().format('YYYYMMDDhhmmss'));
+    console.log('Executing mainJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
     downloadAndSaveData();
   },
   onComplete: function() {
-    console.log('Job startJob finished...' + moment().format('YYYYMMDDhhmmss'));
+    console.log('Job mainJob finished...' + moment().format('YYYYMMDDhhmmss'));
   }
 });
 
@@ -96,16 +87,11 @@ var downloadAndSaveData = function() {
     extract: true
   });
   var hoy = moment();
-  // var anterior = moment(hoy).subtract(1, 'days');
-  var anterior = moment(hoy).subtract(1, 'hours');
-  // var anterior = moment(hoy).subtract(1, 'minutes');
-  // var anterior = moment(hoy).subtract(30, 'seconds');
-  // var anterior = moment(hoy).subtract(15, 'minutes');
-  // var anterior = moment(hoy).subtract(20, 'minutes');
+  var anterior = moment(hoy).subtract(1, 'days');
   download
     .get(properties.get('afip.uri'))
     .dest('downloads')
-    .rename('afip_contr_' + hoy.format('YYYYMMDDhhmmss'))
+    .rename('afip_contr_' + hoy.format('YYYYMMDDhhmm'))
     .run(function(err, files) {
       // if (err || files.length !== 1) {
       if (err) {
@@ -115,9 +101,7 @@ var downloadAndSaveData = function() {
       }
       console.log('Zip file downloaded and decompressed: ' + files[0].path);
 
-      // var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmm');
-      var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmmss');
-      // var filepathAnterior = '';
+      var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmm');
       if (fileExists(filepathAnterior)) {
         console.log('Already exists a previous file, comparing...');
 
@@ -130,65 +114,83 @@ var downloadAndSaveData = function() {
           return;
         }
       }
+
       saveData(files[0].path);
     });
-}
+};
 
 var saveData = function(filepath) {
 
+  var contribuyentes_bak2 = db.collection('contribuyentes_bak2');
+  var contribuyentes_bak = db.collection('contribuyentes_bak');
   var contribuyentes = db.collection('contribuyentes');
-  console.log('Removing documents...');
-  contribuyentes.remove({}, function(err) {
+
+  console.log('Dropping contribuyentes_bak2 collection...');
+  contribuyentes_bak2.drop(function(err, reply) {
     if (err) {
-      enviarMail('[CCA] Failed to remove mongodb documents...', 'Failed to remove mongodb documents....');
-      console.error('Failed to remove mongodb documents');
+      enviarMail('[CCA] Error al eliminar contribuyentes_bak2', 'Hubo un error al dropear la colección contribuyentes_bak2');
+      console.error('Failed to drop contribuyentes_bak2 collection');
       throw err;
     }
-    console.log('Documentes removed...');
+    console.log('contribuyentes_bak2 collection dropped...');
 
-    console.log('Reading file line by line: ' + filepath);
-
-    var file = new LineReader(filepath);
-    co(function*() {
-      var line;
-      // note that eof is defined when `readLine()` yields `null`
-      while ((line = yield file.readLine()) !== null) {
-        var o = parseLineToObject(line);
-        if (o !== null) {
-          saveContribuyente(o);
-        }
+    console.log('Rename contribuyentes_bak collection to contribuyentes_bak2...');
+    contribuyentes_bak.rename('contribuyentes_bak2', function(error, collection) {
+      if (err) {
+        enviarMail('[CCA] Error al renombrar contribuyentes_bak', 'Hubo un error al renombrar la colección contribuyentes_bak');
+        console.error('Failed to rename contribuyentes_bak collection to contribuyentes_bak2...');
+        throw err;
       }
+      console.log('contribuyentes_bak collection renamed to contribuyentes_bak2...');
+
+        console.log('Rename contribuyentes collection to contribuyentes_bak...');
+        contribuyentes.rename('contribuyentes_bak', function(error, collection) {
+          if (err) {
+            enviarMail('[CCA] Error al eliminar contribuyentes', 'Hubo un error al renombrar la colección contribuyentes');
+            console.error('Failed to rename contribuyentes collection to contribuyentes_bak...');
+            throw err;
+          }
+          console.log('contribuyentes collection renamed to contribuyentes_bak...');
+
+          console.log('Reading file line by line: ' + filepath);
+          var file = new LineReader(filepath);
+          co(function*() {
+            var line;
+            // note that eof is defined when `readLine()` yields `null`
+            while ((line = yield file.readLine()) !== null) {
+              var o = parseLineToObject(line);
+              if (o !== null) {
+                saveContribuyente(o);
+              }
+            }
+          });
+
+          function parseLineToObject(line) {
+            var rval = null;
+            if (line !== null && line !== '' && line.length > 0) {
+              rval = {
+                cuit: line.slice(0, 11).trim(),
+                impIva: line.slice(13, 15).trim(),
+                monotributo: line.slice(15, 17).trim()
+              };
+            }
+            return rval;
+          }
+
+          function saveContribuyente(c) {
+            contribuyentes.insert(c, function(err, result) {
+              if (err) {
+                enviarMail('[CCA] Falló al insertar un documento...', 'CUIT del contribuyente: ' + c.cuit);
+                console.error('Failed to insert mongodb document');
+                throw err;
+              }
+              // console.log('Contribuyente saved...');
+            });
+          }
+        });
     });
-
-    function parseLineToObject(line) {
-      var rval = null;
-      if (line !== null && line !== '' && line.length > 0) {
-        rval = {
-          cuit: line.slice(0, 11).trim(),
-          /*impGanancias: line.slice(11, 13).trim(),*/
-          impIva: line.slice(13, 15).trim(),
-          monotributo: line.slice(15, 17).trim()/*,
-          integranteSoc: line.slice(17, 18).trim(),
-          empleador: line.slice(18, 19).trim(),
-          actMonotributo: line.slice(19, 21).trim()*/
-        };
-      }
-      return rval;
-    }
-
-    function saveContribuyente(c) {
-      contribuyentes.insert(c, function(err, result) {
-        if (err) {
-          enviarMail('[CCA] Falló al insertar un documento...', 'CUIT del contribuyente: ' + c.cuit);
-          console.error('Failed to insert mongodb document');
-          throw err;
-        }
-        // console.log('Contribuyente saved...');
-      });
-    }
-
   });
-}
+};
 
 function fileExists(filePath) {
   try {
