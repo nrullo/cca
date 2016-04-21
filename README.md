@@ -63,7 +63,7 @@ cd ~/warez
 git clone https://github.com/nrullo/cca.git
 cd cca
 npm install
-pm2 start app.js
+pm2 start app.js --env production
 pm2 startup [ubuntu|centos]
 pm2 save
 ```
