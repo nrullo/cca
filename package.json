@@ -25,6 +25,7 @@
     "morgan": "^1.6.1",
     "node-mailer": "^0.1.1",
     "nodemailer": "^2.3.2",
+    "properties-reader": "0.0.15",
     "serve-favicon": "^2.3.0",
     "vinyl-file": "^2.0.0"
   },
