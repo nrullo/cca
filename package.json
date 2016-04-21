@@ -23,6 +23,7 @@
     "mongodb": "^2.1.16",
     "mongoose": "^4.1.2",
     "morgan": "^1.6.1",
+    "node-mailer": "^0.1.1",
     "serve-favicon": "^2.3.0",
     "vinyl-file": "^2.0.0"
   },
