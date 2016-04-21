@@ -41,20 +41,29 @@ sudo chkconfig mongod on
 sudo service mongod start
 ```
 
-### Install NodeJS ([ext. guide](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-with-nvm-node-version-manager-on-a-vps))
+### Install NodeJS 
 _*recommended version: 4.1.1_
+#### Ubuntu 14.04 or Centos 6.7 ([ext. guide](https://github.com/creationix/nvm/blob/master/README.markdown))
+```bash
+curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.0/install.sh | bash
+nvm install 4.1.1
+nvm use 4.1.1
+n=$(which node);n=${n%/bin/node}; chmod -R 755 $n/bin/*; sudo cp -r $n/{bin,lib,share} /usr/local
+```
 
-### Install PM2:
+### Install PM2
 ```bash
 npm install pm2 -g
 ```
 
 ## Clone & run
 ```bash
-cd
+mkdir ~/warez
+cd ~/warez
 git clone https://github.com/nrullo/cca.git
 cd cca
+npm install
 pm2 start app.js
-pm2 startup ubuntu
+pm2 startup [ubuntu|centos]
 pm2 save
 ```
