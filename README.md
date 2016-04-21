@@ -3,12 +3,12 @@
 ## Dependencies
 
 ### Install GIT
-#### Ubuntu ([ext. guide](https://www.digitalocean.com/community/tutorials/how-to-install-git-on-ubuntu-14-04))
+#### Ubuntu 14.04 ([ext. guide](https://www.digitalocean.com/community/tutorials/how-to-install-git-on-ubuntu-14-04))
 ```bash
 sudo apt-get update
 sudo apt-get install git
 ```
-#### CentOS ([ext. guide](https://www.digitalocean.com/community/tutorials/how-to-install-git-on-a-centos-6-4-vps))
+#### CentOS 6.7 ([ext. guide](https://www.digitalocean.com/community/tutorials/how-to-install-git-on-a-centos-6-4-vps))
 ```bash
 sudo yum update
 sudo yum install git
@@ -16,14 +16,14 @@ sudo yum install git
 
 ### Install MongoDB
 _*recommended version: 3.2_
-#### Ubuntu ([ext. guide](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/))
+#### Ubuntu 14.04 ([ext. guide](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/))
 ```bash
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
 echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
 sudo apt-get update
 sudo apt-get install -y mongodb-org
 ```
-#### CentOS ([ext. guide](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-red-hat/))
+#### CentOS 6.7 ([ext. guide](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-red-hat/))
 ```bash
 sudo vi /etc/yum.repos.d/mongodb-org-3.2.repo
 ```
