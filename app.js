@@ -51,11 +51,12 @@ app.listen(config.port, function() {
     db.createCollection('contribuyentes_bak');
     db.createCollection('contribuyentes_bak2');
 
-    removeFilesJob.start();
+    // removeFilesJob.start();
     mainJob.start();
   });
 });
 
+/*
 var removeFilesJob = new CronJob({
   cronTime: properties.get('cron.removeFilesJob'),
   onTick: function() {
@@ -67,6 +68,7 @@ var removeFilesJob = new CronJob({
     console.log('Job removeFilesJob finished...' + moment().format('YYYYMMDDhhmmss'));
   }
 });
+*/
 
 var mainJob = new CronJob({
   cronTime: properties.get('cron.mainJob'),
