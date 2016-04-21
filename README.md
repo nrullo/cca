@@ -3,9 +3,15 @@
 ## Dependencies
 
 ### Install GIT ([ext. guide](https://www.digitalocean.com/community/tutorials/how-to-install-git-on-ubuntu-14-04))
+#### Ubuntu
 ```bash
 sudo apt-get update
 sudo apt-get install git
+```
+#### CentOS
+```bash
+sudo yum update
+sudo yum install git
 ```
 
 ### Install MongoDB ([ext. guide](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/))
