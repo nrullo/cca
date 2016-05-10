@@ -1,5 +1,10 @@
 /* jshint esversion: 6 */
 
+process.on('uncaughtException', (err) => {
+  console.log(`Caught exception: ${err}`);
+  enviarMail('[CCA] Error en CCA', 'Hubo un error en la app. ');
+});
+
 var express = require('express'),
   config = require('./config/config'),
   moment = require('moment'),
