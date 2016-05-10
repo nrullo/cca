@@ -1,10 +1,5 @@
 /* jshint esversion: 6 */
 
-process.on('uncaughtException', (err) => {
-  console.log(`Caught exception: ${err}`);
-  enviarMail('[CCA] Error en CCA', 'Hubo un error en la app. ');
-});
-
 var express = require('express'),
   config = require('./config/config'),
   moment = require('moment'),
@@ -150,51 +145,51 @@ var saveData = function(filepath) {
       }
       console.log('contribuyentes_bak collection renamed to contribuyentes_bak2...');
 
-        console.log('Rename contribuyentes collection to contribuyentes_bak...');
-        contribuyentes.rename('contribuyentes_bak', function(error, collection) {
-          if (err) {
-            enviarMail('[CCA] Error al eliminar contribuyentes', 'Hubo un error al renombrar la colección contribuyentes');
-            console.error('Failed to rename contribuyentes collection to contribuyentes_bak...');
-            throw err;
-          }
-          console.log('contribuyentes collection renamed to contribuyentes_bak...');
+      console.log('Rename contribuyentes collection to contribuyentes_bak...');
+      contribuyentes.rename('contribuyentes_bak', function(error, collection) {
+        if (err) {
+          enviarMail('[CCA] Error al eliminar contribuyentes', 'Hubo un error al renombrar la colección contribuyentes');
+          console.error('Failed to rename contribuyentes collection to contribuyentes_bak...');
+          throw err;
+        }
+        console.log('contribuyentes collection renamed to contribuyentes_bak...');
 
-          console.log('Reading file line by line: ' + filepath);
-          var file = new LineReader(filepath);
-          co(function*() {
-            var line;
-            // note that eof is defined when `readLine()` yields `null`
-            while ((line = yield file.readLine()) !== null) {
-              var o = parseLineToObject(line);
-              if (o !== null) {
-                saveContribuyente(o);
-              }
+        console.log('Reading file line by line: ' + filepath);
+        var file = new LineReader(filepath);
+        co(function*() {
+          var line;
+          // note that eof is defined when `readLine()` yields `null`
+          while ((line = yield file.readLine()) !== null) {
+            var o = parseLineToObject(line);
+            if (o !== null) {
+              saveContribuyente(o);
             }
-          });
-
-          function parseLineToObject(line) {
-            var rval = null;
-            if (line !== null && line !== '' && line.length > 0) {
-              rval = {
-                cuit: line.slice(0, 11).trim(),
-                impIva: line.slice(13, 15).trim(),
-                monotributo: line.slice(15, 17).trim()
-              };
-            }
-            return rval;
-          }
-
-          function saveContribuyente(c) {
-            contribuyentes.insert(c, function(err, result) {
-              if (err) {
-                enviarMail('[CCA] Falló al insertar un documento...', 'CUIT del contribuyente: ' + c.cuit);
-                console.error('Failed to insert mongodb document');
-                throw err;
-              }
-              // console.log('Contribuyente saved...');
-            });
           }
         });
+
+        function parseLineToObject(line) {
+          var rval = null;
+          if (line !== null && line !== '' && line.length > 0) {
+            rval = {
+              cuit: line.slice(0, 11).trim(),
+              impIva: line.slice(13, 15).trim(),
+              monotributo: line.slice(15, 17).trim()
+            };
+          }
+          return rval;
+        }
+
+        function saveContribuyente(c) {
+          contribuyentes.insert(c, function(err, result) {
+            if (err) {
+              enviarMail('[CCA] Falló al insertar un documento...', 'CUIT del contribuyente: ' + c.cuit);
+              console.error('Failed to insert mongodb document');
+              throw err;
+            }
+            // console.log('Contribuyente saved...');
+          });
+        }
+      });
     });
   });
 };
@@ -240,8 +235,13 @@ function enviarMail(subject, body) {
   });
 }
 
-process.on('uncaughtException', function (err) {
+process.on('uncaughtException', function(err) {
   console.error((new Date).toUTCString() + ' uncaughtException:', err.message);
   console.error(err.stack);
+  try {
+    enviarMail('[CCA] Error en CCA', 'Hubo un error en la app. ');
+  } catch (err) {
+    console.error('Error al enviar el mail......');
+  }
   process.exit(1);
 });
