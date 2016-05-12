@@ -23,6 +23,18 @@ echo "deb http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.2 multiverse" 
 sudo apt-get update
 sudo apt-get install -y mongodb-org
 ```
+#### Windows 7
+Para correr mongodb como un servicio:
+1) Descargar y ubicarse en el directorio donde se descargó mongoDB. Por ejemplo: C:\Program Files\MongoDB\Server\3.2\
+2) Crear el directorio data
+4) Crear el archivo mongod.cfg con el siguiente contenido:
+logpath=C:\Program Files\MongoDB\Server\3.2\log\mongo.log
+dbpath=C:\Program Files\MongoDB\Server\3.2\data
+5) Ejecutar en la consola de comandos lo siguiente:
+C:\Program Files\MongoDB\Server\3.2\bin\mongod.exe --config  "C:\Program Files\MongoDB\Server\3.2\mongod.cfg" --install
+6) Iniciar el servicio con el siguiente comando
+net start MongoDB
+
 #### CentOS 6.7 ([ext. guide](https://docs.mongodb.org/manual/tutorial/install-mongodb-on-red-hat/))
 ```bash
 sudo vi /etc/yum.repos.d/mongodb-org-3.2.repo
