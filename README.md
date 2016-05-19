@@ -71,7 +71,6 @@ npm install pm2 -g
 
 ## Clone & run
 ```bash
-cd
 git clone https://github.com/nrullo/cca.git
 cd cca
 npm install
