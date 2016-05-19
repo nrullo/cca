@@ -1,24 +1,26 @@
 var express = require('express'),
-  router = express.Router(),
-  mongoose = require('mongoose'),
-  Contribuyente = mongoose.model('Contribuyente');
+  router = express.Router();
+
+var db = require('../../db');
 
 module.exports = function(app) {
   app.use('/', router);
 };
 
 router.get('/contribuyentes/:cuit', function(req, res, next) {
-  Contribuyente.find({
+  var contribuyentes = db.get().collection('contribuyentes');
+
+  contribuyentes.find({
     cuit: req.params.cuit
-  }, function(err, contribuyente) {
-    if (err) return next(err);
-    res.send(contribuyente);
+  }).toArray(function(err, data) {
+    res.send(data);
   });
 });
 
 router.get('/contribuyentes', function(req, res, next) {
-  Contribuyente.find({}, function(err, contribuyentes) {
-    if (err) return next(err);
-    res.send(contribuyentes);
-  }).limit(500);
+  var contribuyentes = db.get().collection('contribuyentes');
+
+  contribuyentes.find({}).limit(500).toArray(function(err, data) {
+    res.send(data);
+  });
 });

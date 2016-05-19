@@ -1,6 +1,5 @@
 var express = require('express'),
   router = express.Router(),
-  mongoose = require('mongoose'),
   PropertiesReader = require('properties-reader');
 
 var properties = PropertiesReader('config/production.properties');

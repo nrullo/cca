@@ -21,7 +21,6 @@
     "method-override": "^2.3.0",
     "moment": "^2.13.0",
     "mongodb": "^2.1.16",
-    "mongoose": "^4.1.2",
     "morgan": "^1.6.1",
     "node-mailer": "^0.1.1",
     "nodemailer": "^2.3.2",

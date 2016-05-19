@@ -5,7 +5,6 @@ var express = require('express'),
   moment = require('moment'),
   Download = require('download'),
   CronJob = require('cron').CronJob,
-  mongoose = require('mongoose'),
   glob = require('glob'),
   co = require('co'),
   LineReader = require('line-by-line-promise'),
@@ -16,20 +15,10 @@ var express = require('express'),
   nodemailer = require('nodemailer'),
   PropertiesReader = require('properties-reader');
 
-var db;
+var db = require('./db');
+
 var properties = PropertiesReader('./config/production.properties');
 
-mongoose.connect(config.db);
-var db = mongoose.connection;
-db.on('error', function() {
-  enviarMail('[CCA] Error conexión mongodb', 'Hubo un error al conectarse a la base de datos');
-  throw new Error('unable to connect to database at ' + config.db);
-});
-
-var models = glob.sync(config.root + '/app/models/*.js');
-models.forEach(function(model) {
-  require(model);
-});
 var app = express();
 
 require('./config/express')(app, config);
@@ -38,18 +27,17 @@ app.listen(config.port, function() {
   console.log('Express server listening on port ' + config.port);
 
   console.log('Connecting to mongodb server...');
-  MongoClient.connect(config.db, function(err, database) {
+  db.connect(config.db, function(err) {
     if (err) {
       enviarMail('[CCA] Error conexión mongodb', 'Hubo un error al conectarse a la base de datos');
       console.error('Failed mongodb connection');
       throw err;
     }
-    console.log('Connected correctly to mongodb server');
-    db = database;
+    console.log('Connected correctly to mongodb server. db: ' + config.db);
 
-    db.createCollection('contribuyentes');
-    db.createCollection('contribuyentes_bak');
-    db.createCollection('contribuyentes_bak2');
+    db.get().createCollection('contribuyentes');
+    db.get().createCollection('contribuyentes_bak');
+    db.get().createCollection('contribuyentes_bak2');
 
     // removeFilesJob.start();
     mainJob.start();
@@ -123,9 +111,9 @@ var downloadAndSaveData = function() {
 
 var saveData = function(filepath) {
 
-  var contribuyentes_bak2 = db.collection('contribuyentes_bak2');
-  var contribuyentes_bak = db.collection('contribuyentes_bak');
-  var contribuyentes = db.collection('contribuyentes');
+  var contribuyentes_bak2 = db.get().collection('contribuyentes_bak2');
+  var contribuyentes_bak = db.get().collection('contribuyentes_bak');
+  var contribuyentes = db.get().collection('contribuyentes');
 
   console.log('Dropping contribuyentes_bak2 collection...');
   contribuyentes_bak2.drop(function(err, reply) {
