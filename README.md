@@ -71,8 +71,7 @@ npm install pm2 -g
 
 ## Clone & run
 ```bash
-mkdir ~/warez
-cd ~/warez
+cd
 git clone https://github.com/nrullo/cca.git
 cd cca
 npm install
