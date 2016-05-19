@@ -13,7 +13,9 @@ var express = require('express'),
   fsCompareSync = require('fs-compare').sync,
   del = require('delete'),
   nodemailer = require('nodemailer'),
-  PropertiesReader = require('properties-reader');
+  PropertiesReader = require('properties-reader'),
+  touch = require('touch'),
+  findRemoveSync = require('find-remove');
 
 var db = require('./db');
 
@@ -39,24 +41,23 @@ app.listen(config.port, function() {
     db.get().createCollection('contribuyentes_bak');
     db.get().createCollection('contribuyentes_bak2');
 
-    // removeFilesJob.start();
+    removeOldFilesJob.start();
     mainJob.start();
   });
 });
 
-/*
-var removeFilesJob = new CronJob({
-  cronTime: properties.get('cron.removeFilesJob'),
+var removeOldFilesJob = new CronJob({
+  cronTime: properties.get('cron.removeOldFilesJob'),
   onTick: function() {
-    console.log('Executing removeFilesJob job... ' + moment().format('YYYYMMDDhhmmss'));
+    console.log('Executing removeOldFilesJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
-    del.sync(['/home/usuario/prj/consultasCuitAFIP/cca/downloads/*']);
+    var result = findRemoveSync('downloads/', {age: {seconds: 259200}});
+
   },
   onComplete: function() {
     console.log('Job removeFilesJob finished...' + moment().format('YYYYMMDDhhmmss'));
   }
 });
-*/
 
 var mainJob = new CronJob({
   cronTime: properties.get('cron.mainJob'),
@@ -90,6 +91,16 @@ var downloadAndSaveData = function() {
         throw err;
       }
       console.log('Zip file downloaded and decompressed: ' + files[0].path);
+
+      console.log('Updating timestamp (touching)... ');
+      touch (files[0].path, {'nocreate': true}, function(err) {
+        if (err) {
+          enviarMail('[CCA] Failed to touch file...', 'Failed to file...');
+          console.error('Error on touch');
+        } else {
+          console.log('Touch cool');
+        }
+      });
 
       var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmm');
       if (fileExists(filepathAnterior)) {
