@@ -235,11 +235,11 @@ function enviarMail(subject, body) {
 }
 
 process.on('uncaughtException', function(err) {
-  console.error((new Date).toUTCString() + ' uncaughtException:', err.message);
+  console.error((new Date()).toUTCString() + ' uncaughtException:', err.message);
   console.error(err.stack);
   try {
     enviarMail('[CCA] Error en CCA', 'Hubo un error en la app. ');
-  } catch (err) {
+  } catch (errr) {
     console.error('Error al enviar el mail......');
   }
   process.exit(1);
