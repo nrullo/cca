@@ -15,27 +15,43 @@ var express = require('express'),
   nodemailer = require('nodemailer'),
   PropertiesReader = require('properties-reader'),
   touch = require('touch'),
-  findRemoveSync = require('find-remove');
+  findRemoveSync = require('find-remove'),
+  winston = require('winston');
 
 var db = require('./db');
 
 var properties = PropertiesReader('./config/production.properties');
+
+var logger = new(winston.Logger)({
+  transports: [
+    new(winston.transports.File)({
+      name: 'info-file',
+      filename: 'logs/filelog-info.log',
+      level: 'info'
+    }),
+    new(winston.transports.File)({
+      name: 'error-file',
+      filename: 'logs/filelog-error.log',
+      level: 'error'
+    })
+  ]
+});
 
 var app = express();
 
 require('./config/express')(app, config);
 
 app.listen(config.port, function() {
-  console.log('Express server listening on port ' + config.port);
+  logger.info('Express server listening on port ' + config.port);
 
-  console.log('Connecting to mongodb server...');
+  logger.info('Connecting to mongodb server...');
   db.connect(config.db, function(err) {
     if (err) {
       enviarMail('[CCA] Error conexión mongodb', 'Hubo un error al conectarse a la base de datos');
-      console.error('Failed mongodb connection');
+      logger.error('Failed mongodb connection');
       throw err;
     }
-    console.log('Connected correctly to mongodb server. db: ' + config.db);
+    logger.info('Connected correctly to mongodb server. db: ' + config.db);
 
     db.get().createCollection('contribuyentes');
     db.get().createCollection('contribuyentes_bak');
@@ -49,30 +65,34 @@ app.listen(config.port, function() {
 var removeOldFilesJob = new CronJob({
   cronTime: properties.get('cron.removeOldFilesJob'),
   onTick: function() {
-    console.log('Executing removeOldFilesJob job... ' + moment().format('YYYYMMDDhhmmss'));
+    logger.info('Executing removeOldFilesJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
-    var result = findRemoveSync('downloads/', {age: {seconds: 259200}});
+    var result = findRemoveSync('downloads/', {
+      age: {
+        seconds: 259200
+      }
+    });
 
   },
   onComplete: function() {
-    console.log('Job removeFilesJob finished...' + moment().format('YYYYMMDDhhmmss'));
+    logger.info('Job removeFilesJob finished...' + moment().format('YYYYMMDDhhmmss'));
   }
 });
 
 var mainJob = new CronJob({
   cronTime: properties.get('cron.mainJob'),
   onTick: function() {
-    console.log('Executing mainJob job... ' + moment().format('YYYYMMDDhhmmss'));
+    logger.info('Executing mainJob job... ' + moment().format('YYYYMMDDhhmmss'));
 
     downloadAndSaveData();
   },
   onComplete: function() {
-    console.log('Job mainJob finished...' + moment().format('YYYYMMDDhhmmss'));
+    logger.info('Job mainJob finished...' + moment().format('YYYYMMDDhhmmss'));
   }
 });
 
 var downloadAndSaveData = function() {
-  console.log('Downloading and decompressing AFIP zip file: ' + properties.get('afip.uri'));
+  logger.info('Downloading and decompressing AFIP zip file: ' + properties.get('afip.uri'));
   var download = new Download({
     mode: '755',
     extract: true
@@ -87,31 +107,33 @@ var downloadAndSaveData = function() {
       // if (err || files.length !== 1) {
       if (err) {
         enviarMail('[CCA] Failed to download zip file...', 'Failed to download zip file...');
-        console.error('Failed to download zip file...');
+        logger.error('Failed to download zip file...');
         throw err;
       }
-      console.log('Zip file downloaded and decompressed: ' + files[0].path);
+      logger.info('Zip file downloaded and decompressed: ' + files[0].path);
 
-      console.log('Updating timestamp (touching)... ');
-      touch (files[0].path, {'nocreate': true}, function(err) {
+      logger.info('Updating timestamp (touching)... ');
+      touch(files[0].path, {
+        'nocreate': true
+      }, function(err) {
         if (err) {
           enviarMail('[CCA] Failed to touch file...', 'Failed to file...');
-          console.error('Error on touch');
+          logger.error('Error on touch');
         } else {
-          console.log('Touch cool');
+          logger.info('Touch cool');
         }
       });
 
       var filepathAnterior = files[0].path.replace(files[0].stem, '') + 'afip_contr_' + anterior.format('YYYYMMDDhhmm');
       if (fileExists(filepathAnterior)) {
-        console.log('Already exists a previous file, comparing...');
+        logger.info('Already exists a previous file, comparing...');
 
         var modifiedTime = function(fileName, cb) {
           return fs.statSync(fileName).mtime;
         };
         var diff = fsCompareSync(modifiedTime, filepathAnterior, files[0].path);
         if (diff === 0) {
-          console.log('Same files... ending...');
+          logger.info('Same files... ending...');
           return;
         }
       }
@@ -126,34 +148,34 @@ var saveData = function(filepath) {
   var contribuyentes_bak = db.get().collection('contribuyentes_bak');
   var contribuyentes = db.get().collection('contribuyentes');
 
-  console.log('Dropping contribuyentes_bak2 collection...');
+  logger.info('Dropping contribuyentes_bak2 collection...');
   contribuyentes_bak2.drop(function(err, reply) {
     if (err) {
       enviarMail('[CCA] Error al eliminar contribuyentes_bak2', 'Hubo un error al dropear la colección contribuyentes_bak2');
-      console.error('Failed to drop contribuyentes_bak2 collection');
+      logger.error('Failed to drop contribuyentes_bak2 collection');
       throw err;
     }
-    console.log('contribuyentes_bak2 collection dropped...');
+    logger.info('contribuyentes_bak2 collection dropped...');
 
-    console.log('Rename contribuyentes_bak collection to contribuyentes_bak2...');
+    logger.info('Rename contribuyentes_bak collection to contribuyentes_bak2...');
     contribuyentes_bak.rename('contribuyentes_bak2', function(error, collection) {
       if (err) {
         enviarMail('[CCA] Error al renombrar contribuyentes_bak', 'Hubo un error al renombrar la colección contribuyentes_bak');
-        console.error('Failed to rename contribuyentes_bak collection to contribuyentes_bak2...');
+        logger.error('Failed to rename contribuyentes_bak collection to contribuyentes_bak2...');
         throw err;
       }
-      console.log('contribuyentes_bak collection renamed to contribuyentes_bak2...');
+      logger.info('contribuyentes_bak collection renamed to contribuyentes_bak2...');
 
-      console.log('Rename contribuyentes collection to contribuyentes_bak...');
+      logger.info('Rename contribuyentes collection to contribuyentes_bak...');
       contribuyentes.rename('contribuyentes_bak', function(error, collection) {
         if (err) {
           enviarMail('[CCA] Error al eliminar contribuyentes', 'Hubo un error al renombrar la colección contribuyentes');
-          console.error('Failed to rename contribuyentes collection to contribuyentes_bak...');
+          logger.error('Failed to rename contribuyentes collection to contribuyentes_bak...');
           throw err;
         }
-        console.log('contribuyentes collection renamed to contribuyentes_bak...');
+        logger.info('contribuyentes collection renamed to contribuyentes_bak...');
 
-        console.log('Reading file line by line: ' + filepath);
+        logger.info('Reading file line by line: ' + filepath);
         var file = new LineReader(filepath);
         co(function*() {
           var line;
@@ -182,10 +204,10 @@ var saveData = function(filepath) {
           contribuyentes.insert(c, function(err, result) {
             if (err) {
               enviarMail('[CCA] Falló al insertar un documento...', 'CUIT del contribuyente: ' + c.cuit);
-              console.error('Failed to insert mongodb document');
+              logger.error('Failed to insert mongodb document');
               throw err;
             }
-            // console.log('Contribuyente saved...');
+            // logger.info('Contribuyente saved...');
           });
         }
       });
@@ -198,13 +220,13 @@ function fileExists(filePath) {
     return fs.statSync(filePath).isFile();
   } catch (err) {
     // enviarMail('[CCA] Error al leer archivo previo.', 'No existe el archivo previo. Archivo: ' + filePath);
-    console.error('Failed to read previous file');
+    logger.error('Failed to read previous file');
     return false;
   }
 }
 
 function enviarMail(subject, body) {
-  console.log('enviarMail executed...');
+  logger.info('enviarMail executed...');
   var options = {
     host: properties.get('smtp.host'),
     port: properties.get('smtp.port'),
@@ -225,22 +247,22 @@ function enviarMail(subject, body) {
   };
 
   // send mail with defined transport object
-  console.log('Executing transporter...');
+  logger.info('Executing transporter...');
   transporter.sendMail(mailOptions, function(error, info) {
     if (error) {
-      return console.error(error);
+      return logger.error(error);
     }
-    console.log('Message sent: ' + info.response);
+    logger.info('Message sent: ' + info.response);
   });
 }
 
 process.on('uncaughtException', function(err) {
-  console.error((new Date()).toUTCString() + ' uncaughtException:', err.message);
-  console.error(err.stack);
+  logger.error((new Date()).toUTCString() + ' uncaughtException:', err.message);
+  logger.error(err.stack);
   try {
     enviarMail('[CCA] Error en CCA', 'Hubo un error en la app. ');
   } catch (errr) {
-    console.error('Error al enviar el mail......');
+    logger.error('Error al enviar el mail......');
   }
   process.exit(1);
 });

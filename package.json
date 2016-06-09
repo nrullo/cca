@@ -28,7 +28,8 @@
     "properties-reader": "0.0.15",
     "serve-favicon": "^2.3.0",
     "touch": "^1.0.0",
-    "vinyl-file": "^2.0.0"
+    "vinyl-file": "^2.0.0",
+    "winston": "^2.2.0"
   },
   "devDependencies": {
     "grunt": "^0.4.5",
