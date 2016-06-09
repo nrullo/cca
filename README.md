@@ -74,7 +74,7 @@ npm install pm2 -g
 git clone https://github.com/nrullo/cca.git
 cd cca
 npm install
-pm2 start app.js --env production
+pm2 start app.js --env production --name cca --node-args="--max-old-space-size=3072"
 pm2 startup [ubuntu|centos]
 pm2 save
 ```
