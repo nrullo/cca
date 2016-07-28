@@ -3,3 +3,6 @@ public/components
 .sass-cache
 downloads/
 *.zip
+public/*.zip
+logs/
+config/production_*.properties
