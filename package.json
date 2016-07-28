@@ -20,7 +20,6 @@
     "find-remove": "https://github.com/nrullo/find-remove/tarball/master",
     "fs-compare": "0.0.4",
     "glob": "^6.0.4",
-    "heapdump": "^0.3.7",
     "line-by-line-promise": "0.0.1",
     "method-override": "^2.3.0",
     "moment": "^2.13.0",

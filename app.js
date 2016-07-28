@@ -22,7 +22,6 @@ var express = require('express'),
   findRemoveSync = require('find-remove'),
   winston = require('winston'),
   fileCompare = require('file-compare'),
-  heapdump = require('heapdump'),
   countLinesInFile = require('count-lines-in-file');
 
 var db = require('./db');
