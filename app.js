@@ -92,7 +92,7 @@ app.listen(config.port, function() {
       db.get().createCollection('contribuyentes');
       db.get().createCollection('contribuyentes_bak');
 
-      removeOldFilesJob.start();
+      // removeOldFilesJob.start();
       downloadAndParseDataJob.start();
       saveDataJob.start();
     });
@@ -219,18 +219,22 @@ var downloadAndGetData = function() {
 var getData = function(filepath) {
   var contribuyentes_bak = db.get().collection('contribuyentes_bak');
 
-  logger.info('Reading file line by line: ' + filepath);
-  var file = new LineReader(filepath);
-  co(function*() {
-    var line;
-    // note that eof is defined when `readLine()` yields `null`
-    while ((line = yield file.readLine()) !== null) {
-      var o = parseLineToObject(line);
-      if (o !== null) {
-        saveContribuyente(o);
+  contribuyentes_bak.remove({}, function(err, numberRemoved) {
+    logger.info('contribuyentes_bak truncated, docs removed: ' + numberRemoved);
+
+    logger.info('Reading file line by line: ' + filepath);
+    var file = new LineReader(filepath);
+    co(function*() {
+      var line;
+      // note that eof is defined when `readLine()` yields `null`
+      while ((line = yield file.readLine()) !== null) {
+        var o = parseLineToObject(line);
+        if (o !== null) {
+          saveContribuyente(o);
+        }
       }
-    }
-  }).catch(onerror);
+    }).catch(onerror);
+  });
 
   function onerror(err) {
     // log any uncaught errors
