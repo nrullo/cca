@@ -306,9 +306,14 @@ var saveData = function(filepath) {
               throw 'Error al renombrar contribuyentes_bak a contribuyentes...';
             }
             logger.info('contribuyentes_bak collection renamed to contribuyentes...');
+
+            enviarMail('[CCA] Se actualizo la BD...', '[CCA] Se actualizo la BD...');
+
           });
 
         });
+      } else {
+        enviarMail('[CCA] No se actualizo la BD...', '[CCA] No se actualizo la BD...');
       }
     });
 
