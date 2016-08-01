@@ -92,7 +92,7 @@ app.listen(config.port, function() {
       db.get().createCollection('contribuyentes');
       db.get().createCollection('contribuyentes_bak');
 
-      // removeOldFilesJob.start();
+      removeOldFilesJob.start();
       downloadAndParseDataJob.start();
       saveDataJob.start();
     });
