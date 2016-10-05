@@ -6,3 +6,4 @@ downloads/
 public/*.zip
 logs/
 config/production_*.properties
+#deleteme
